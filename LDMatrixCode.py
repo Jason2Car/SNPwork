@@ -8,13 +8,15 @@ from matplotlib import pyplot
 
 in_train = open('LDMatrix_train.txt', 'r').read()
 in_test = open('LDMatrix_test.txt', 'r').read()
-result = open('response.txt', 'r').read()
+response_train = open('response_train.txt', 'r').read()
+response_test = open('response_test.txt', 'r').read()
+
 #If you want to change this to manually setting, go ahead
 input = "test	1	1 1	1	1	relu			10	32"
 
 #Seperate into each case, 1092 cases in total
 in_train = in_train.split("\n") #inputs
-in_test = in_test.split("\n") #expected results
+in_test = in_test.split("\n") #expected response_trains
 #Remove the SNP identifiers and ends are blank
 in_train = in_train[1:8300]
 in_test = in_test[1:8300]
@@ -138,9 +140,9 @@ model_cnn1.compile(optimizer = optimizer, loss = loss)
 
 
 #May need to change or manually set epochs/batch size as needed
-model_cnn1.fit(in_train, result, batch_size = batch_size, epochs = epochs)
+model_cnn1.fit(in_train, response_train, batch_size = batch_size, epochs = epochs)
 
 # Model Evaluation
-evaluate_test = model_cnn1.evaluate(in_test, result, verbose = 0)
+evaluate_test = model_cnn1.evaluate(in_test, response_test, verbose = 0)
 
 print('Test loss', evaluate_test)
