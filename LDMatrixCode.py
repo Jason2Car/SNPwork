@@ -20,10 +20,10 @@ train_response = train_response.split("\n") #expected outputs
 test_response = test_response.split("\n") 
 
 #Remove the begining SNP identifiers and ending are blanks
-train_data = train_data[1:8300]
-test_data = test_data[1:8300]
-test_response = in_train[1:874]
-test_response = in_test[1:220]
+train_data = train_data[1:len(train_data)-1]
+test_data = test_data[1:len(train_data)-1]
+train_response = in_train[1:len(train_response)-1]
+test_response = in_test[1:len(test_response)-1]
 
 #Creating arrays to hold data
 train_in = []
