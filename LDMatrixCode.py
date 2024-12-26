@@ -3,9 +3,11 @@ import numpy as np
 import tensorflow as tf
 import keras
 import math
+import random
 from keras import layers
 from matplotlib import pyplot
 
+#read in values
 train_data = open('LDMatrix_train.txt', 'r').read()
 test_data = open('LDMatrix_test.txt', 'r').read()
 train_response = open('train_response.txt', 'r').read()
@@ -19,9 +21,9 @@ test_data = test_data.split("\n")
 train_response = train_response.split("\n") #expected outputs
 test_response = test_response.split("\n") 
 
-#Remove the begining SNP identifiers and ending are blanks
+#Remove the begining case identifiers and ending blanks
 train_data = train_data[1:len(train_data)-1]
-test_data = test_data[1:len(train_data)-1]
+test_data = test_data[1:len(test_data)-1]
 train_response = in_train[1:len(train_response)-1]
 test_response = in_test[1:len(test_response)-1]
 
@@ -31,38 +33,44 @@ test_in = []
 train_out = []
 test_out = []
 
+#need to put everything in a temp array since then the fitting method sees the data as 1 set of input for 1 set of output
+temp = []
 for i in train_data:
     cur = (i.split())#Create an array to hold data in the case
     cur = cur[1:] #Remove the "case #" at the start of every case
     for i in range(len(cur)):#Seperate the data in that case
         cur[i] = float(cur[i])#Convert the String into numbers
-    train_in.append(np.array(cur))#Add the array to the data set
+    temp.append(np.array(cur))#Add the array to the data set
+train_in.append(temp)
 
 #Repeat process with the test data
+temp = []
 for i in test_data:
     cur = (i.split())
     cur = cur[1:]
     for i in range(len(cur)):
         cur[i] = float(cur[i])
-    test_in.append(np.array(cur))
+    temp.append(np.array(cur))
+test_in.append(temp)
 
+temp = []
 for i in train_response:
     cur = i.split()
-    train_out.append(float(cur[1]))
-    
+    temp.append(float(cur[1]))
+train_out.append(temp)
+
+temp = []
 for i in test_response:
     cur = i.split()
-    test_out.append(float(cur[1]))
-# #Seperate the data into testing and training data
-# train_data = np.array(train[:math.floor(len(train)*0.8)])
-# train_targets= np.array(test[:math.floor(len(test)*0.8)])
-# test_data = np.array(train[math.floor(len(train)*0.8):])
-# test_targets = np.array(test[math.floor(len(test)*0.8):])
-# #Confirms shapes are correct
-# print("Training data shape:", train_data.shape)
-# print("Training targets shape:", train_targets.shape)
-# print("Test data shape:", test_data.shape)
-# print("Test targets shape:", test_targets.shape)
+    temp.append(float(cur[1]))
+test_out.append(temp)
+
+#making sure it's an array
+train_input=np.array(train_input)
+test_input=np.array(test_input)
+train_out=np.array(train_out)
+test_out=np.array(test_out)
+
 
 # Define exponential decay schedule, copy pasted from previou lessons
 initial_learning_rate = 0.1
@@ -104,6 +112,7 @@ nActivation = input[3+2*cLayers+nLayers]
 epochs = input[4+2*cLayers+nLayers]
 batch_size = input[5+2*cLayers+nLayers]
 
+#choose to remove these print statements if you want, good for confimring case
 print("Case Num: "+ str(caseNum))
 print("Input: "+ str(input))
 print("Clayers "+str(cLayers))
@@ -130,22 +139,21 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 model_cnn = keras.Sequential()
 #print(train_data.shape)
 #Plug in the number of filters, size of filters, activation functions, and the 
-model_cnn.add(Conv2D(filters = numFilters[0], kernel_size = (sizeFilters[0], sizeFilters[0]), activation=cActivation, input_shape=(8299, 8299,1)))
+model_cnn.add(Conv2D(filters = numFilters[0], kernel_size = (sizeFilters[0], sizeFilters[0]), activation=cActivation, input_shape=(len(train_input[0]), len(train_input[0][0]),1)))
 
-for i in range(cLayers):
+#for loop starts at 1 since first convolutional layer was already added
+for i in range(1, cLayers):
     model_cnn.add(layers.Conv2D(filters = numFilters[i], kernel_size = (sizeFilters[i], sizeFilters[i]), activation = cActivation))
 
 #should be no need pooling layers, can test if want to later
 
-# Flatten the output of the Conv1D layer
+# Flatten the output of the Conv2D layer
 model_cnn.add(layers.Flatten())
 for i in range(nLayers):
     model_cnn.add(layers.Dense(density[i], activation = nActivation))
 
 #model_cnn.add(layers.Dense(1, activation = activation)) # not sure if we want the final to have a activation
-
-#requires some clarification on size of output
-model_cnn.add(layers.Dense(len(train_out)))
+model_cnn.add(layers.Dense(len(train_out))) 
 
 # Summary of your model
 model_cnn.summary()
@@ -158,6 +166,14 @@ model_cnn.compile(optimizer = optimizer, loss = loss)
 model_cnn.fit(train_data, train_response, batch_size = batch_size, epochs = epochs)
 
 # Model Evaluation
-evaluate_test = model_cnn.evaluate(test_data, test_response, verbose = 0)
+output = model_cnn1(test_input) #output produced by test data
+positions = random.sample(range(0, len(test_out[0])), len(test_out[0])) #get the data from random positions to compare with
 
-print('Test loss', evaluate_test)
+sum = 0
+for i in range(len(test_out[0])):
+    sum+= math.pow((output[0][positions[i]].numpy().item()-test_out[0][i]),2) #summing differences squared
+
+evaluate_test = sum/len(test_out[0]) #average of differences
+
+
+print('Test loss', evaluate_test) #print
