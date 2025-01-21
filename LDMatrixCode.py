@@ -153,7 +153,7 @@ for i in range(nLayers):
     model_cnn.add(layers.Dense(density[i], activation = nActivation))
 
 #model_cnn.add(layers.Dense(1, activation = activation)) # not sure if we want the final to have a activation
-model_cnn.add(layers.Dense(len(train_out))) 
+model_cnn.add(layers.Dense(len(train_out[0]))) 
 
 # Summary of your model
 model_cnn.summary()
@@ -166,7 +166,7 @@ model_cnn.compile(optimizer = optimizer, loss = loss)
 model_cnn.fit(train_data, train_response, batch_size = batch_size, epochs = epochs)
 
 # Model Evaluation
-output = model_cnn1(test_input) #output produced by test data
+output = model_cnn(test_input) #output produced by test data
 positions = random.sample(range(0, len(test_out[0])), len(test_out[0])) #get the data from random positions to compare with
 
 sum = 0
