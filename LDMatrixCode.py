@@ -1,4 +1,3 @@
-!pip install tensorflow
 import numpy as np
 import tensorflow as tf
 import keras
@@ -24,8 +23,8 @@ test_response = test_response.split("\n")
 #Remove the begining case identifiers and ending blanks
 train_data = train_data[1:len(train_data)-1]
 test_data = test_data[1:len(test_data)-1]
-train_response = in_train[1:len(train_response)-1]
-test_response = in_test[1:len(test_response)-1]
+train_response = train_response[1:len(train_response)-1]
+test_response = test_response[1:len(test_response)-1]
 
 #Creating arrays to hold data
 train_in = []
@@ -66,9 +65,9 @@ for i in test_response:
 test_out.append(temp)
 
 #making sure it's an array
-train_input=np.array(train_input)
-test_input=np.array(test_input)
+train_in=np.array(train_in)
 train_out=np.array(train_out)
+test_in=np.array(test_in)
 test_out=np.array(test_out)
 
 
@@ -139,7 +138,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 model_cnn = keras.Sequential()
 #print(train_data.shape)
 #Plug in the number of filters, size of filters, activation functions, and the 
-model_cnn.add(Conv2D(filters = numFilters[0], kernel_size = (sizeFilters[0], sizeFilters[0]), activation=cActivation, input_shape=(len(train_input[0]), len(train_input[0][0]),1)))
+model_cnn.add(Conv2D(filters = numFilters[0], kernel_size = (sizeFilters[0], sizeFilters[0]), activation=cActivation, input_shape=(len(train_in[0]), len(train_in[0][0]),1)))
 
 #for loop starts at 1 since first convolutional layer was already added
 for i in range(1, cLayers):
@@ -166,10 +165,13 @@ model_cnn.compile(optimizer = optimizer, loss = loss)
 model_cnn.fit(train_data, train_response, batch_size = batch_size, epochs = epochs)
 
 # Model Evaluation
-output = model_cnn(test_input) #output produced by test data
+output = model_cnn(test_in) #output produced by test data
 positions = random.sample(range(0, len(test_out[0])), len(test_out[0])) #get the data from random positions to compare with
 
 sum = 0
+
+
+
 for i in range(len(test_out[0])):
     sum+= math.pow((output[0][positions[i]].numpy().item()-test_out[0][i]),2) #summing differences squared
 
