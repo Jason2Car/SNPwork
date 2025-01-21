@@ -10,8 +10,8 @@ from matplotlib import pyplot
 #read in values
 train_data = open('LDMatrix_train.txt', 'r').read()
 test_data = open('LDMatrix_test.txt', 'r').read()
-train_response = open('train_response.txt', 'r').read()
-test_response = open('test_response.txt', 'r').read()
+train_response = open('response_train.txt', 'r').read()
+test_response = open('response_test.txt', 'r').read()
 
 #If you want to change this to manually setting, go ahead
 input = "test	1	1 1	1	1	relu			10	32"
