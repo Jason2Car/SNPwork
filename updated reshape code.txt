@@ -1,0 +1,290 @@
+import numpy as np
+import tensorflow as tf
+import keras
+import math
+import random
+from keras import layers
+from matplotlib import pyplot
+
+train_data = open('apoe_LDMat_train.txt', 'r').read()
+test_data = open('apoe_LDMat_test.txt', 'r').read()
+train_response = open('hip_res_train.txt', 'r').read()
+test_response = open('hip_res_test.txt', 'r').read()
+
+#If you want to change this to manually setting, go ahead
+# input = "test	1	1 1	1	1	relu			10	32"
+
+
+train_data = train_data.split("\n") #inputs
+test_data = test_data.split("\n") 
+train_response = train_response.split("\n") #expected outputs
+test_response = test_response.split("\n") 
+
+#Remove the 1st line and last blank line
+train_data = train_data[1:len(train_data)-1]
+test_data = test_data[1:len(test_data)-1]
+train_response = train_response[1:len(train_response)-1]
+test_response = test_response[1:len(test_response)-1]
+
+#Creating arrays to hold data
+train_in = []
+test_in = []
+train_out = []
+test_out = []
+
+#need to put everything in a temp array since then the fitting method sees the data as 1 set of input for 1 set of output
+temp = []
+for i in train_data:
+    cur = (i.split())#Create an array to hold data in the case
+    cur = cur[1:] #Remove the "case #" at the start of every case
+    for i in range(len(cur)):#Seperate the data in that case
+        cur[i] = float(cur[i])#Convert the String into numbers
+    temp.append(np.array(cur))#Add the array to the data set
+train_in.append(temp)
+
+#Repeat process with the test data
+temp = []
+for i in test_data:
+    cur = (i.split())
+    cur = cur[1:]
+    for i in range(len(cur)):
+        cur[i] = float(cur[i])
+    temp.append(np.array(cur))
+test_in.append(temp)
+
+list_sum = 0
+list_long = 0
+list_avg = 0
+
+for i in train_response:
+    cur = i.split()
+    if cur[1] != 'NA':
+        list_sum = list_sum + float(cur[1])
+        list_long = list_long + 1
+
+list_avg = list_sum / list_long
+
+print("list_sum train", list_sum)
+print("list_long train", list_long)
+print("list_avg train", list_avg)
+
+temp = []
+for i in train_response:
+    cur = i.split()
+    if cur[1] == 'NA':
+        #print(cur[1])
+        temp.append(float(list_avg))
+    else:
+        temp.append(float(cur[1]))
+
+train_out.append(temp)
+
+list_sum = 0
+list_long = 0
+list_avg = 0
+
+for i in test_response:
+    cur = i.split()
+    if cur[1] != 'NA':
+        list_sum = list_sum + float(cur[1])
+        list_long = list_long + 1
+
+list_avg = list_sum / list_long
+
+print("list_sum test", list_sum)
+print("list_long test", list_long)
+print("list_avg test", list_avg)
+
+temp = []
+for i in test_response:
+    cur = i.split()
+    if cur[1] == 'NA':
+        #print(cur[1])
+        temp.append(float(list_avg))
+    else:
+        temp.append(float(cur[1]))
+
+test_out.append(temp)  -- 1x168x168
+print("test_out here", test_out)
+
+#making sure it's an array
+train_input=np.array(train_in) # LDMatrix_Train
+test_input=np.array(test_in)   # LDMatrix_test
+train_output=np.array(train_out)   #train_response
+test_output=np.array(test_out)   #test_response
+
+#print("len(train_output): Here2", len(train_output))
+
+print("test_output", test_output)
+
+#print("train_input[0]", train_input[0])
+
+
+# Define exponential decay schedule, copy pasted from previou lessons
+initial_learning_rate = 0.1
+decay_steps = 1000
+decay_rate = 0.98
+staircase = True
+
+input = "test	1	50 500	1	50	relu			10	32"
+
+from keras.optimizers.schedules import ExponentialDecay
+# The learning rate schedule will set the learning rate to be 
+# initial_learning_rate * decay_rate ^ (global_step / decay_steps).
+# If staircase == True, the division glocal_step/decay_steps will be the integer division
+lr_schedule = ExponentialDecay(
+    initial_learning_rate = initial_learning_rate,
+    decay_steps = decay_steps,
+    decay_rate = decay_rate,
+    staircase = staircase)
+
+input = input.split()
+print(input[0])
+caseNum = (input[0])
+cLayers = int(input[1])
+numFilters = []
+for i in range(2, 2+cLayers):
+    numFilters.append(int(input[i]))
+
+sizeFilters = []
+for i in range(2+cLayers,2+2*cLayers):
+    sizeFilters.append(int(input[i]))
+
+nLayers = int(input[2+2*cLayers])
+density = []
+for i in range(3+2*cLayers, 3+2*cLayers+nLayers):
+    density.append(int(input[i]))
+
+cActivation = input[3+2*cLayers+nLayers]
+nActivation = input[3+2*cLayers+nLayers]
+
+epochs = input[4+2*cLayers+nLayers]
+batch_size = input[5+2*cLayers+nLayers]
+
+#choose to remove these print statements if you want, good for confimring case
+print("Case Num: "+ str(caseNum))
+print("Input: "+ str(input))
+print("Clayers "+str(cLayers))
+print("numfilters "+str(numFilters))
+print("sizefilters "+str(sizeFilters))
+print("nLayers "+str(nLayers))
+print("density "+str(density))
+print("cActivaion "+ (cActivation))
+print("nActivaion "+ (nActivation))
+print("epochs "+ (epochs))
+print("batch_size "+ (batch_size))
+
+
+
+lr_schedule = keras.optimizers.schedules.ExponentialDecay(
+    initial_learning_rate=1e-2,
+    decay_steps=10000,
+    decay_rate=0.9)
+optimizer = keras.optimizers.SGD(learning_rate=lr_schedule)
+loss = "mse"
+
+print("len(train_input[0]), len(train_input[0][0])", len(train_input[0]), len(train_input[0][0]))
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+
+model_cnn = keras.Sequential()
+#print(train_data.shape)
+#Plug in the number of filters, size of filters, activation functions, and the 
+
+print("sizeFilters[0]", sizeFilters[0])
+print("numFilters[0]", numFilters[0])
+print("len(train_input[0][0])", len(train_input[0][0]))
+
+#model_cnn.add(Conv2D(filters = numFilters[0], kernel_size = (sizeFilters[0], sizeFilters[0]), activation=cActivation, input_shape=(len(train_input[0]), len(train_input[0][0]),1)))
+#model_cnn.add(Conv2D(filters = 50, kernel_size = (3, 3), activation=cActivation, input_shape=(len(train_input[0]), len(train_input[0][0]), 1)))
+#Test loss 0.01385621469985694
+
+#model_cnn.add(Conv2D(filters = 50, kernel_size = (5, 5), activation=cActivation, input_shape=(len(train_input[0]), len(train_input[0][0]), 1)))
+#Test loss 0.013833512064323622
+
+model_cnn.add(Conv2D(filters = 150, kernel_size = (3, 3), activation=cActivation, input_shape=(len(train_input[0]), len(train_input[0][0]), 1))) -- 168x168x1
+#Test loss 0.013841637104403793
+#100 times average 0.0138514387632769
+
+#model_cnn.add(Conv2D(filters = 150, kernel_size = (5, 5), activation=cActivation, input_shape=(len(train_input[0]), len(train_input[0][0]), 1)))
+#Test loss 0.013854259982765559
+
+#for loop starts at 1 since first convolutional layer was already added
+for i in range(1, cLayers):
+    print("numFilters[i]", numFilters[i])
+    model_cnn.add(layers.Conv2D(filters = numFilters[i], kernel_size = (sizeFilters[i], sizeFilters[i]), activation = cActivation))
+
+#should be no need pooling layers, can test if want to later
+
+# Flatten the output of the Conv2D layer
+model_cnn.add(layers.Flatten())
+for i in range(nLayers):
+    model_cnn.add(layers.Dense(density[i], activation = nActivation))
+
+#model_cnn.add(layers.Dense(1, activation = activation)) # not sure if we want the final to have a activation
+print("len(train_output) here 3 ",len(train_output[0]))
+model_cnn.add(layers.Dense(len(train_output[0])))  # Corrected Jason's code here with len(train_output[0])
+
+# Summary of your model
+#print("cnn summary")
+#model_cnn.summary()
+
+# Model compilation
+model_cnn.compile(optimizer = optimizer, loss = loss)
+
+
+#May need to change or manually set epochs/batch size as needed
+print('Batch Size')
+print(batch_size)
+print(epochs)
+
+1x168x168   -> 1x624x1
+1x24x1
+#model_cnn.fit(train_data, train_response, batch_size = batch_size, epochs = epochs)
+model_cnn.fit(train_input, train_output, batch_size = 32, epochs = 10)
+
+# Model Evaluation
+    
+
+print("Training loss", model_cnn.evaluate(train_input, train_output, verbose = 0))
+
+print("#####")
+
+#print("test_input", test_input)
+print("len(test_input[0])", len(test_input[0]))
+# Model Evaluation
+output = model_cnn(test_input) #output produced by test data
+#print("output[0]", output[0])
+
+print("output shape:", output.shape)  # 624
+print("Test output shape:", test_output.shape)  #156
+
+###print("Test loss: ", model_cnn.evaluate(test_input, test_output, verbose = 0))
+### Commented Out: Incompatible shapes: [1,156] vs. [1,624]
+
+positions = random.sample(range(0, len(test_output[0])), len(test_output[0])) #get the data from random positions to compare with
+
+#print("length of test_out[0]",len(test_out[0]))
+#print("len(output[0]", len(output[0]))
+#print("output array here", output)
+#print("output array[0] here", output[0])
+#print("output array length here", len(output)) --1
+#print("output array[0] length here", len(output[0]))  -- 624
+
+count = 0
+numTimes = 100
+evaluate_test=0
+
+while (count < numTimes):
+    count = count + 1
+
+    sum = 0
+    for i in range(len(test_output[0])):
+        sum+= math.pow((output[0][positions[i]].numpy().item()-test_output[0][i]),2) #summing differences squared
+    
+    evaluate_test_tmp = sum/len(test_output[0]) #average of differences
+    evaluate_test= evaluate_test + evaluate_test_tmp
+
+evaluate_test=evaluate_test/numTimes
+
+print('Test loss', evaluate_test) #print
+
