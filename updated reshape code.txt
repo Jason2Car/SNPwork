@@ -274,17 +274,15 @@ count = 0
 numTimes = 100
 evaluate_test=0
 
-while (count < numTimes):
-    count = count + 1
+# Predict and calculate correlation
+output = model_cnn.predict(test_in).flatten()
 
-    sum = 0
-    for i in range(len(test_output[0])):
-        sum+= math.pow((output[0][positions[i]].numpy().item()-test_output[0][i]),2) #summing differences squared
-    
-    evaluate_test_tmp = sum/len(test_output[0]) #average of differences
-    evaluate_test= evaluate_test + evaluate_test_tmp
+# Calculate summed differences squared (original method)
+positions = random.sample(range(0, len(test_out)), len(test_out))
+sum_squared_differences = np.mean([(output[positions[i]] - test_out[i])**2 for i in range(len(test_out))])
 
-evaluate_test=evaluate_test/numTimes
+# Calculate correlation
+correlation = np.corrcoef(output, test_out)[0, 1]
 
-print('Test loss', evaluate_test) #print
-
+print("Summed differences squared (MSE):", sum_squared_differences)
+print("Correlation between predicted and actual test responses:", correlation)
